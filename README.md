@@ -247,18 +247,25 @@ console.log(braces('a/{b,c}/d', { expand: true }));
 
 **Description**: To prevent malicious patterns from being passed by users, an error is thrown when `braces.expand()` is used or `options.expand` is true and the generated range will exceed the `rangeLimit`.
 
-You can customize `options.rangeLimit` or set it to `Inifinity` to disable this altogether.
+You can customize `options.rangeLimit` or set it to `Infinity` or `false` to disable the size limit.
+
+The limit counts each range inclusively, in either direction, including character
+ranges. Explicit pattern steps take precedence over `options.step`; negative
+steps use their absolute value and zero is normalized to one. Numeric range
+endpoints must be safe integers, even when the size limit is disabled, because
+larger numbers can stop making progress during generation. Invalid ranges and
+steps retain their normal fallback or `strictRanges` errors. This limit applies
+to individual ranges, not the combined cardinality of alternative products.
 
 **Examples**
 
 ```js
-// pattern exceeds the "rangeLimit", so it's optimized automatically
-console.log(braces.expand('{1..1000}'));
-//=> ['([1-9]|[1-9][0-9]{1,2}|1000)']
+// A range larger than the configured limit is rejected before generation.
+braces.expand('{1..1001}'); // throws RangeError (default limit: 1000)
 
-// pattern does not exceed "rangeLimit", so it's NOT optimized
-console.log(braces.expand('{1..100}'));
-//=> ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', '23', '24', '25', '26', '27', '28', '29', '30', '31', '32', '33', '34', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50', '51', '52', '53', '54', '55', '56', '57', '58', '59', '60', '61', '62', '63', '64', '65', '66', '67', '68', '69', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99', '100']
+// A range exactly at the limit is allowed.
+console.log(braces.expand('{1..3}', { rangeLimit: 3 }));
+//=> ['1', '2', '3']
 ```
 
 ### options.transform
