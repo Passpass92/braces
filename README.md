@@ -172,6 +172,28 @@ console.log(braces.expand('a{b}c'));
 //=> ['a{b}c']
 ```
 
+## Nesting and AST safety limits
+
+The parser allows at most 128 nested brace/parenthesis containers, including
+unmatched opening delimiters. Escaped or quoted delimiters do not count.
+Before `compile`, `expand`, or `stringify` processes an AST, an iterative check
+limits child-edge depth to 128 (the root is at depth zero) and visits to 65,536,
+including repeated visits to shared nodes. This check also applies to direct
+imports from `lib/`. Child cycles are rejected; acyclic shared child objects are
+allowed. The parser's normal `parent` and `prev` backlinks are not child edges.
+Both parent-chain traversals used by expansion are separately bounded to 128.
+
+Exceeding a bound throws a `SyntaxError` with code `ERR_BRACES_COMPLEXITY`.
+These fixed limits cannot be raised or disabled through options. Because text
+and delimiter nodes add a child edge, 128 parsed containers can exceed the AST
+depth limit when later compiled, expanded, or stringified; 127 containers leave
+room for these terminal nodes.
+
+These checks bound nesting and AST traversal, not arbitrary AST property
+getters, array-valued text nodes, total expansion cardinality, or the execution
+time of regular expressions generated from patterns. The existing `maxLength`
+and `rangeLimit` options remain independent protections.
+
 ## Options
 
 ### options.maxLength
