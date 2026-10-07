@@ -181,7 +181,13 @@ limits child-edge depth to 128 (the root is at depth zero) and visits to 65,536,
 including repeated visits to shared nodes. This check also applies to direct
 imports from `lib/`. Child cycles are rejected; acyclic shared child objects are
 allowed. The parser's normal `parent` and `prev` backlinks are not child edges.
-Both parent-chain traversals used by expansion are separately bounded to 128.
+Expansion derives its work queues from the actual child traversal and does not
+read `parent` metadata. External queues and cyclic or inconsistent parent links
+cannot provide expansion input. Standalone parenthesis subtrees and shared
+child objects therefore do not need matching parent links. Caller-provided
+parent queues are intentionally ignored instead of being consumed or mutated.
+This also handles reparented nodes from malformed patterns such as `{(a)`,
+which previously could fail with a `TypeError` from a stale parent queue.
 
 Exceeding a bound throws a `SyntaxError` with code `ERR_BRACES_COMPLEXITY`.
 These fixed limits cannot be raised or disabled through options. Because text

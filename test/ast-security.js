@@ -55,26 +55,26 @@ describe('bounded parser and AST traversal', () => {
     assert.throws(() => braces.compile({ type: 'root', nodes: Array(65536).fill(leaf) }), safeError);
   });
 
-  it('rejects cyclic parent chains in expand instead of hanging', function() {
+  it('ignores cyclic parent metadata in expand instead of hanging', function() {
     this.timeout(5000);
     const probe = spawnSync(process.execPath, ['-e', `
       const braces = require(${JSON.stringify(path.join(__dirname, '..'))});
       const child = { type: 'paren', nodes: [] };
       child.parent = child;
-      try { braces.expand({ type: 'root', nodes: [child] }); process.exit(2); }
-      catch (error) { if (error.name !== 'SyntaxError' || error.code !== 'ERR_BRACES_COMPLEXITY') process.exit(3); }
+      const result = braces.expand({ type: 'root', nodes: [child] });
+      if (JSON.stringify(result) !== '[]') process.exit(2);
     `], { timeout: 2000, encoding: 'utf8' });
     assert.equal(probe.status, 0, String(probe.error || probe.stderr));
   });
 
-  it('also bounds the outer parent traversal in expand', function() {
+  it('ignores cyclic parent metadata on the entry node in expand', function() {
     this.timeout(5000);
     const probe = spawnSync(process.execPath, ['-e', `
       const braces = require(${JSON.stringify(path.join(__dirname, '..'))});
       const child = { type: 'paren', nodes: [] };
       child.parent = child;
-      try { braces.expand(child); process.exit(2); }
-      catch (error) { if (error.name !== 'SyntaxError' || error.code !== 'ERR_BRACES_COMPLEXITY') process.exit(3); }
+      const result = braces.expand(child);
+      if (JSON.stringify(result) !== '[]') process.exit(2);
     `], { timeout: 2000, encoding: 'utf8' });
     assert.equal(probe.status, 0, String(probe.error || probe.stderr));
   });
